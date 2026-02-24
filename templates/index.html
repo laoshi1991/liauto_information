@@ -7,79 +7,111 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         :root {
-            --primary-color: #007bff;
-            --bg-color: #f8f9fa;
-            --text-color: #333;
-            --border-color: #ddd;
+            --bg-color: #0b1120;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
+            --border-color: rgba(148, 163, 184, 0.1);
         }
         
         body {
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text-primary);
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
 
         header {
-            background-color: #fff;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
             padding: 1rem;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--border-color);
             z-index: 10;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0.5;
         }
 
         h1 {
             margin: 0;
             font-size: 1.5rem;
-            color: #333;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
         }
 
         .tab-nav {
             display: flex;
             justify-content: center;
-            background-color: #fff;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            gap: 1rem;
         }
 
         .tab-btn {
-            padding: 1rem 1.5rem;
-            border: none;
-            background: none;
+            padding: 0.6rem 1.5rem;
+            border: 1px solid var(--border-color);
+            background: rgba(30, 41, 59, 0.4);
             cursor: pointer;
-            font-size: 1rem;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            border-radius: 9999px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .tab-btn:hover {
-            color: var(--primary-color);
-            background-color: rgba(0, 123, 255, 0.05);
+            color: var(--text-primary);
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
         }
 
         .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
+            color: #0b1120;
+            background: var(--accent-color);
+            border-color: var(--accent-color);
             font-weight: 600;
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
         .content-container {
             flex: 1;
-            padding: 1rem;
+            padding: 1.5rem;
             overflow: hidden;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .tab-content {
             display: none;
             width: 100%;
             height: 100%;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.4s ease-out;
         }
 
         .tab-content.active {
@@ -89,12 +121,14 @@
         #chart-container {
             width: 100%;
             height: 100%;
-            min-height: 400px; /* Ensure height on mobile */
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            min-height: 400px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
             padding: 1rem;
             box-sizing: border-box;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .placeholder-content {
@@ -102,23 +136,25 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            background-color: #fff;
-            border-radius: 8px;
-            color: #999;
+            background: var(--card-bg);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+            color: var(--text-secondary);
             font-size: 1.2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
             h1 { font-size: 1.2rem; }
-            .tab-btn { padding: 0.8rem 1rem; font-size: 0.9rem; }
+            .tab-btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
             .content-container { padding: 0.5rem; }
-            #chart-container { padding: 0.5rem; }
+            #chart-container { border-radius: 12px; }
         }
     </style>
 </head>
@@ -129,9 +165,9 @@
     </header>
 
     <nav class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('tab1')">南向持股情况</button>
-        <button class="tab-btn" onclick="switchTab('tab2')">待开发</button>
-        <button class="tab-btn" onclick="switchTab('tab3')">待开发</button>
+        <button class="tab-btn active" onclick="switchTab('tab1')">南向持股</button>
+        <button class="tab-btn" onclick="switchTab('tab2')">资金流向</button>
+        <button class="tab-btn" onclick="switchTab('tab3')">市场情绪</button>
     </nav>
 
     <div class="content-container">
@@ -143,14 +179,14 @@
         <!-- Tab 2: Placeholder -->
         <div id="tab2" class="tab-content">
             <div class="placeholder-content">
-                功能待开发...
+                Waiting for Development...
             </div>
         </div>
 
         <!-- Tab 3: Placeholder -->
         <div id="tab3" class="tab-content">
             <div class="placeholder-content">
-                功能待开发...
+                Waiting for Development...
             </div>
         </div>
     </div>
@@ -162,20 +198,27 @@
         // Initialize chart
         function initChart() {
             if (myChart) return;
-            myChart = echarts.init(chartDom);
+            // Use dark theme
+            myChart = echarts.init(chartDom, 'dark', {
+                renderer: 'canvas',
+                useDirtyRect: false
+            });
             fetchData();
         }
 
         function fetchData() {
-            // Show loading
-            myChart.showLoading();
+            myChart.showLoading({
+                text: 'Loading...',
+                color: '#38bdf8',
+                textColor: '#94a3b8',
+                maskColor: 'rgba(11, 17, 32, 0.8)'
+            });
             
             fetch('/api/data')
                 .then(response => response.json())
                 .then(data => {
                     myChart.hideLoading();
                     
-                    // Sort data by date
                     data.sort((a, b) => new Date(a['日期']) - new Date(b['日期']));
 
                     const dates = data.map(item => item['日期']);
@@ -183,25 +226,39 @@
                     const totalHoldings = data.map(item => item['南向总持有：亿股']);
 
                     const option = {
+                        backgroundColor: 'transparent',
                         tooltip: {
                             trigger: 'axis',
-                            axisPointer: { type: 'cross' }
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            borderColor: '#38bdf8',
+                            textStyle: { color: '#f1f5f9' },
+                            axisPointer: { 
+                                type: 'line',
+                                lineStyle: {
+                                    color: '#38bdf8',
+                                    type: 'dashed'
+                                }
+                            }
                         },
                         legend: {
                             data: ['南向当日净增持（万股）', '南向总持有（亿股）'],
-                            bottom: 0
+                            bottom: 0,
+                            textStyle: { color: '#94a3b8' }
                         },
                         grid: {
                             top: '15%',
                             left: '3%',
                             right: '3%',
                             bottom: '10%',
-                            containLabel: true
+                            containLabel: true,
+                            borderColor: '#333'
                         },
                         xAxis: [
                             {
                                 type: 'category',
                                 data: dates,
+                                axisLine: { lineStyle: { color: '#475569' } },
+                                axisLabel: { color: '#94a3b8' },
                                 axisPointer: { type: 'shadow' }
                             }
                         ],
@@ -209,13 +266,20 @@
                             {
                                 type: 'value',
                                 name: '净增持（万股）',
-                                splitLine: { show: false }
+                                nameTextStyle: { color: '#94a3b8' },
+                                splitLine: { 
+                                    show: true, 
+                                    lineStyle: { color: 'rgba(148, 163, 184, 0.05)' } 
+                                },
+                                axisLabel: { color: '#94a3b8' }
                             },
                             {
                                 type: 'value',
                                 name: '总持有（亿股）',
+                                nameTextStyle: { color: '#94a3b8' },
                                 position: 'right',
-                                splitLine: { show: false } // Cleaner look
+                                splitLine: { show: false },
+                                axisLabel: { color: '#94a3b8' }
                             }
                         ],
                         series: [
@@ -223,16 +287,31 @@
                                 name: '南向当日净增持（万股）',
                                 type: 'bar',
                                 data: netIncrease,
-                                itemStyle: { color: '#5470C6' }
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#38bdf8' },
+                                        { offset: 1, color: 'rgba(56, 189, 248, 0.1)' }
+                                    ]),
+                                    borderRadius: [4, 4, 0, 0]
+                                },
+                                animationDelay: (idx) => idx * 10
                             },
                             {
                                 name: '南向总持有（亿股）',
                                 type: 'line',
                                 yAxisIndex: 1,
                                 data: totalHoldings,
-                                itemStyle: { color: '#EE6666' },
+                                itemStyle: {
+                                    color: '#f43f5e'
+                                },
+                                lineStyle: {
+                                    width: 3,
+                                    shadowColor: 'rgba(244, 63, 94, 0.5)',
+                                    shadowBlur: 10
+                                },
                                 showSymbol: false,
-                                smooth: true
+                                smooth: true,
+                                animationDelay: (idx) => idx * 10 + 100
                             }
                         ]
                     };
@@ -244,44 +323,32 @@
                 });
         }
 
-        // Tab Switching Logic
         function switchTab(tabId) {
-            // Remove active class from all buttons and contents
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-            // Add active class to clicked button
-            // Find the button that called this function (simple way: search by text or pass 'this' but strict mode etc.)
-            // Instead, we can just find the button by index or attribute. 
-            // Better: loop through buttons and check which one matches the tabId logic, 
-            // but simplified here:
             const buttons = document.querySelectorAll('.tab-btn');
             if(tabId === 'tab1') buttons[0].classList.add('active');
             if(tabId === 'tab2') buttons[1].classList.add('active');
             if(tabId === 'tab3') buttons[2].classList.add('active');
 
-            // Show content
             document.getElementById(tabId).classList.add('active');
 
-            // If switching to tab1, resize chart
             if (tabId === 'tab1') {
-                // Use setTimeout to allow DOM to update visibility before resizing
                 setTimeout(() => {
                     if (myChart) {
                         myChart.resize();
                     } else {
                         initChart();
                     }
-                }, 50); // slight delay
+                }, 50);
             }
         }
 
-        // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
             initChart();
         });
 
-        // Handle window resize
         window.addEventListener('resize', () => {
             if (myChart) myChart.resize();
         });
