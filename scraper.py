@@ -3,7 +3,8 @@ import pandas as pd
 import os
 from datetime import datetime
 
-FILE_PATH = '/Users/caoshijie/Desktop/coding/理想web/理想南向持有.xlsx'
+# Use relative path
+FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '理想南向持有.xlsx')
 
 def run():
     print(f"[{datetime.now()}] Starting scraper...")

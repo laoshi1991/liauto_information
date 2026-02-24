@@ -6,7 +6,8 @@ import datetime
 import scraper
 
 app = Flask(__name__)
-FILE_PATH = '/Users/caoshijie/Desktop/coding/理想web/理想南向持有.xlsx'
+# Use relative path for Vercel/Cloud compatibility
+FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '理想南向持有.xlsx')
 
 def read_data():
     if not os.path.exists(FILE_PATH):
