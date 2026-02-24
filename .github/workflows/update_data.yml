@@ -2,8 +2,8 @@ name: Update Southbound Data
 
 on:
   schedule:
-    # Run at 20:35 Beijing Time (UTC+8) -> 12:35 UTC every day
-    - cron: '35 12 * * *'
+    # Run at 20:45 Beijing Time (UTC+8) -> 12:45 UTC every day
+    - cron: '45 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
