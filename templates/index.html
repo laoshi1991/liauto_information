@@ -3,52 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>理想汽车南向资金持股趋势</title>
+    <title>理想汽车数据信息</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        #main { width: 100%; height: 100vh; }
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background-color: #fff;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1rem;
+        }
+
+        .tab-btn {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .content-container {
+            flex: 1;
+            padding: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #chart-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px; /* Ensure height on mobile */
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .placeholder-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background-color: #fff;
+            border-radius: 8px;
+            color: #999;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         @media (max-width: 768px) {
-            #main { height: 90vh; margin-top: 20px; }
+            h1 { font-size: 1.2rem; }
+            .tab-btn { padding: 0.8rem 1rem; font-size: 0.9rem; }
+            .content-container { padding: 0.5rem; }
+            #chart-container { padding: 0.5rem; }
         }
     </style>
 </head>
 <body>
-    <div id="main"></div>
+
+    <header>
+        <h1>理想汽车数据信息</h1>
+    </header>
+
+    <nav class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('tab1')">南向持股情况</button>
+        <button class="tab-btn" onclick="switchTab('tab2')">待开发</button>
+        <button class="tab-btn" onclick="switchTab('tab3')">待开发</button>
+    </nav>
+
+    <div class="content-container">
+        <!-- Tab 1: Chart -->
+        <div id="tab1" class="tab-content active">
+            <div id="chart-container"></div>
+        </div>
+
+        <!-- Tab 2: Placeholder -->
+        <div id="tab2" class="tab-content">
+            <div class="placeholder-content">
+                功能待开发...
+            </div>
+        </div>
+
+        <!-- Tab 3: Placeholder -->
+        <div id="tab3" class="tab-content">
+            <div class="placeholder-content">
+                功能待开发...
+            </div>
+        </div>
+    </div>
+
     <script>
-        var chartDom = document.getElementById('main');
-        var myChart = echarts.init(chartDom);
-        var option;
+        var myChart = null;
+        var chartDom = document.getElementById('chart-container');
+
+        // Initialize chart
+        function initChart() {
+            if (myChart) return;
+            myChart = echarts.init(chartDom);
+            fetchData();
+        }
 
         function fetchData() {
+            // Show loading
+            myChart.showLoading();
+            
             fetch('/api/data')
                 .then(response => response.json())
                 .then(data => {
-                    // Process data
-                    // Data structure: [{'日期': '...', '南向当日净增持：万股': ..., '南向总持有：亿股': ...}, ...]
-                    // Sort by date just in case
+                    myChart.hideLoading();
+                    
+                    // Sort data by date
                     data.sort((a, b) => new Date(a['日期']) - new Date(b['日期']));
 
                     const dates = data.map(item => item['日期']);
                     const netIncrease = data.map(item => item['南向当日净增持：万股']);
                     const totalHoldings = data.map(item => item['南向总持有：亿股']);
 
-                    option = {
-                        title: {
-                            text: '理想汽车南向资金持股趋势',
-                            left: 'center'
-                        },
+                    const option = {
                         tooltip: {
                             trigger: 'axis',
-                            axisPointer: {
-                                type: 'cross'
-                            }
+                            axisPointer: { type: 'cross' }
                         },
                         legend: {
                             data: ['南向当日净增持（万股）', '南向总持有（亿股）'],
-                            bottom: 10
+                            bottom: 0
                         },
                         grid: {
+                            top: '15%',
                             left: '3%',
                             right: '3%',
                             bottom: '10%',
@@ -58,9 +202,7 @@
                             {
                                 type: 'category',
                                 data: dates,
-                                axisPointer: {
-                                    type: 'shadow'
-                                }
+                                axisPointer: { type: 'shadow' }
                             }
                         ],
                         yAxis: [
@@ -73,7 +215,7 @@
                                 type: 'value',
                                 name: '总持有（亿股）',
                                 position: 'right',
-                                splitLine: { show: false }
+                                splitLine: { show: false } // Cleaner look
                             }
                         ],
                         series: [
@@ -81,32 +223,69 @@
                                 name: '南向当日净增持（万股）',
                                 type: 'bar',
                                 data: netIncrease,
-                                itemStyle: {
-                                    color: '#5470C6'
-                                }
+                                itemStyle: { color: '#5470C6' }
                             },
                             {
                                 name: '南向总持有（亿股）',
                                 type: 'line',
                                 yAxisIndex: 1,
                                 data: totalHoldings,
-                                itemStyle: {
-                                    color: '#EE6666'
-                                },
+                                itemStyle: { color: '#EE6666' },
                                 showSymbol: false,
                                 smooth: true
                             }
                         ]
                     };
-
                     myChart.setOption(option);
                 })
-                .catch(error => console.error('Error fetching data:', error));
+                .catch(error => {
+                    console.error('Error:', error);
+                    myChart.hideLoading();
+                });
         }
 
-        fetchData();
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Remove active class from all buttons and contents
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-        window.addEventListener('resize', myChart.resize);
+            // Add active class to clicked button
+            // Find the button that called this function (simple way: search by text or pass 'this' but strict mode etc.)
+            // Instead, we can just find the button by index or attribute. 
+            // Better: loop through buttons and check which one matches the tabId logic, 
+            // but simplified here:
+            const buttons = document.querySelectorAll('.tab-btn');
+            if(tabId === 'tab1') buttons[0].classList.add('active');
+            if(tabId === 'tab2') buttons[1].classList.add('active');
+            if(tabId === 'tab3') buttons[2].classList.add('active');
+
+            // Show content
+            document.getElementById(tabId).classList.add('active');
+
+            // If switching to tab1, resize chart
+            if (tabId === 'tab1') {
+                // Use setTimeout to allow DOM to update visibility before resizing
+                setTimeout(() => {
+                    if (myChart) {
+                        myChart.resize();
+                    } else {
+                        initChart();
+                    }
+                }, 50); // slight delay
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (myChart) myChart.resize();
+        });
+
     </script>
 </body>
 </html>
