@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_file
 import pandas as pd
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -13,7 +13,6 @@ def read_data():
         return []
     try:
         df = pd.read_excel(FILE_PATH)
-        # Ensure date is string for JSON serialization
         # Handle datetime objects
         if pd.api.types.is_datetime64_any_dtype(df['日期']):
             df['日期'] = df['日期'].dt.strftime('%Y-%m-%d')
@@ -35,6 +34,12 @@ def index():
 def get_data():
     data = read_data()
     return jsonify(data)
+
+@app.route('/api/export')
+def export_data():
+    if not os.path.exists(FILE_PATH):
+        return "Data file not found", 404
+    return send_file(FILE_PATH, as_attachment=True, download_name='理想汽车南向持股数据.xlsx')
 
 def scheduled_job():
     print(f"Job run at {datetime.datetime.now()}")
