@@ -1,6 +1,8 @@
 name: Update Southbound Data
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # Run at 20:45 Beijing Time (UTC+8) -> 12:45 UTC every day
     - cron: '45 12 * * *'
