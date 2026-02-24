@@ -1,0 +1,7 @@
+Flask
+pandas
+akshare
+apscheduler
+openpyxl
+requests
+beautifulsoup4
