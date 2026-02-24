@@ -166,8 +166,8 @@
 
     <nav class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('tab1')">南向持股</button>
-        <button class="tab-btn" onclick="switchTab('tab2')">资金流向</button>
-        <button class="tab-btn" onclick="switchTab('tab3')">市场情绪</button>
+        <button class="tab-btn" onclick="switchTab('tab2')">待开发</button>
+        <button class="tab-btn" onclick="switchTab('tab3')">待开发</button>
     </nav>
 
     <div class="content-container">
@@ -288,11 +288,23 @@
                                 type: 'bar',
                                 data: netIncrease,
                                 itemStyle: {
-                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                        { offset: 0, color: '#38bdf8' },
-                                        { offset: 1, color: 'rgba(56, 189, 248, 0.1)' }
-                                    ]),
-                                    borderRadius: [4, 4, 0, 0]
+                                    color: function(params) {
+                                        let val = params.value;
+                                        if (val >= 0) {
+                                            // Positive: Red (End of bar to 0-axis)
+                                            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                                { offset: 0, color: '#ef4444' }, 
+                                                { offset: 1, color: 'rgba(239, 68, 68, 0.1)' }
+                                            ]);
+                                        } else {
+                                            // Negative: Green (0-axis to End of bar)
+                                            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                                { offset: 0, color: 'rgba(34, 197, 94, 0.1)' },
+                                                { offset: 1, color: '#22c55e' }
+                                            ]);
+                                        }
+                                    },
+                                    borderRadius: [4, 4, 4, 4]
                                 },
                                 animationDelay: (idx) => idx * 10
                             },
@@ -302,11 +314,11 @@
                                 yAxisIndex: 1,
                                 data: totalHoldings,
                                 itemStyle: {
-                                    color: '#f43f5e'
+                                    color: '#38bdf8'
                                 },
                                 lineStyle: {
                                     width: 3,
-                                    shadowColor: 'rgba(244, 63, 94, 0.5)',
+                                    shadowColor: 'rgba(56, 189, 248, 0.5)',
                                     shadowBlur: 10
                                 },
                                 showSymbol: false,
