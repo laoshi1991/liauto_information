@@ -30,7 +30,15 @@ def run():
         # Sort by date
         merged_df = merged_df.sort_values('date')
         
-        # Forward Fill '持股数量' for days where Connect was closed but HK was open
+        # Important: Do NOT create data for future dates if Southbound data is missing.
+        # Find the last date where we actually have Southbound data.
+        # Any HK trading days AFTER this date should be dropped, because we don't know if holdings changed.
+        last_valid_hsgt_date = df_hsgt['持股日期'].max()
+        if pd.notnull(last_valid_hsgt_date):
+            print(f"Latest Southbound data available: {last_valid_hsgt_date}")
+            merged_df = merged_df[merged_df['date'] <= last_valid_hsgt_date]
+        
+        # Forward Fill '持股数量' for days where Connect was closed but HK was open (intermediate gaps)
         merged_df['持股数量'] = merged_df['持股数量'].ffill()
         
         # Calculate Net Increase
