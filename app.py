@@ -46,8 +46,27 @@ def debug_info():
         'file_path': FILE_PATH,
         'file_exists': os.path.exists(FILE_PATH),
         'python_version': platform.python_version(),
-        'platform': platform.platform()
+        'platform': platform.platform(),
+        'read_test': 'Not attempted',
+        'read_error': None
     }
+    
+    # Try reading the file
+    try:
+        if os.path.exists(FILE_PATH):
+            df = pd.read_excel(FILE_PATH)
+            info['read_test'] = 'Success'
+            info['columns'] = list(df.columns)
+            info['row_count'] = len(df)
+            info['sample_data'] = df.head(2).to_dict(orient='records')
+        else:
+            info['read_test'] = 'File not found'
+    except Exception as e:
+        info['read_test'] = 'Failed'
+        info['read_error'] = str(e)
+        import traceback
+        info['traceback'] = traceback.format_exc()
+
     return jsonify(info)
 
 @app.route('/api/export')
