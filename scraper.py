@@ -9,78 +9,52 @@ FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '理想南�
 def run():
     print(f"[{datetime.now()}] Starting scraper...")
     
-    # 1. Fetch data from Akshare
     try:
-        df_ak = ak.stock_hsgt_individual_em(symbol="02015")
-        # df_ak columns: ['持股日期', '当日收盘价', '当日涨跌幅', '持股数量', '持股市值', '持股数量占A股百分比', '持股市值变化-1日', '持股市值变化-5日', '持股市值变化-10日']
+        # 1. Fetch Southbound Holdings Data (Connect Days only)
+        print("Fetching Southbound Holdings...")
+        df_hsgt = ak.stock_hsgt_individual_em(symbol="02015")
+        df_hsgt['持股日期'] = pd.to_datetime(df_hsgt['持股日期'])
+        
+        # 2. Fetch HK Stock Daily Data (HK Trading Days)
+        print("Fetching HK Daily Data...")
+        df_hk = ak.stock_hk_daily(symbol="02015", adjust="")
+        # df_hk columns: date, open, close, etc.
+        # Ensure date is datetime
+        df_hk['date'] = pd.to_datetime(df_hk['date'])
+        
+        # 3. Merge to align with HK Trading Days
+        # Use df_hk as base (Left Join) to keep all HK trading days
+        merged_df = pd.merge(df_hk[['date']], df_hsgt[['持股日期', '持股数量']], left_on='date', right_on='持股日期', how='left')
+        
+        # 4. Process Data
+        # Sort by date
+        merged_df = merged_df.sort_values('date')
+        
+        # Forward Fill '持股数量' for days where Connect was closed but HK was open
+        merged_df['持股数量'] = merged_df['持股数量'].ffill()
+        
+        # Calculate Net Increase
+        merged_df['diff'] = merged_df['持股数量'].diff()
+        merged_df['南向当日净增持：万股'] = merged_df['diff'] / 10000
+        merged_df['南向总持有：亿股'] = merged_df['持股数量'] / 100000000
+        merged_df['日期'] = merged_df['date'].dt.strftime('%Y-%m-%d')
+        
+        # Select relevant columns
+        final_df = merged_df[['日期', '南向当日净增持：万股', '南向总持有：亿股']].copy()
+        
+        # Remove rows where holdings are still NaN (e.g. before Southbound inception if any)
+        final_df = final_df.dropna(subset=['南向总持有：亿股'])
+        
+        # 5. Save (Overwrite to ensure full history is aligned with HK calendar)
+        # Check if we should append or overwrite. 
+        # Since logic changed to "HK trading days", it's safer to overwrite to fill past gaps.
+        final_df.to_excel(FILE_PATH, index=False)
+        print(f"Excel updated successfully. Total rows: {len(final_df)}")
+        print(f"Latest date: {final_df['日期'].iloc[-1]}")
+            
     except Exception as e:
-        print(f"Error fetching data from Akshare: {e}")
-        return
+        print(f"Error in scraper: {e}")
 
-    # 2. Process Data
-    # Sort by date
-    df_ak['持股日期'] = pd.to_datetime(df_ak['持股日期'])
-    df_ak = df_ak.sort_values('持股日期')
-    
-    # Calculate Net Increase (万股) and Total Holdings (亿股)
-    # Net Increase = (Today - Yesterday) / 10000
-    df_ak['diff'] = df_ak['持股数量'].diff()
-    # For the first row, diff is NaN. We might leave it or fill it if we have context.
-    # But since we are appending, we care about recent data.
-    
-    df_ak['南向当日净增持：万股'] = df_ak['diff'] / 10000
-    df_ak['南向总持有：亿股'] = df_ak['持股数量'] / 100000000
-    df_ak['日期'] = df_ak['持股日期'].dt.strftime('%Y-%m-%d')
-    
-    # Select relevant columns
-    new_data = df_ak[['日期', '南向当日净增持：万股', '南向总持有：亿股']].copy()
-    
-    # 3. Read existing Excel to find last date
-    if os.path.exists(FILE_PATH):
-        try:
-            existing_df = pd.read_excel(FILE_PATH)
-            # Ensure Date column is datetime
-            existing_df['日期'] = pd.to_datetime(existing_df['日期'])
-            last_date = existing_df['日期'].max()
-            print(f"Last date in Excel: {last_date}")
-            
-            # Filter new rows
-            # new_data['日期'] is string, convert to datetime for comparison
-            new_data['dt'] = pd.to_datetime(new_data['日期'])
-            rows_to_add = new_data[new_data['dt'] > last_date].copy()
-            
-            if rows_to_add.empty:
-                print("No new data to append.")
-                return
-
-            print(f"Found {len(rows_to_add)} new rows.")
-            
-            # Recalculate the first row's Net Increase if needed?
-            # actually, df_ak['diff'] uses previous row in df_ak. 
-            # If df_ak covers the transition from last_date to new_date, it's correct.
-            # Assuming df_ak history overlaps with Excel history.
-            
-            # Format for Excel
-            # Drop temp column
-            rows_to_add = rows_to_add.drop(columns=['dt'])
-            
-            # Append
-            # We need to write back to Excel. 
-            # To preserve existing format, we concat and write.
-            # existing_df needs to be converted back to match format if needed, but pandas handles it.
-            existing_df['日期'] = existing_df['日期'].dt.strftime('%Y-%m-%d')
-            
-            updated_df = pd.concat([existing_df, rows_to_add], ignore_index=True)
-            
-            # Save
-            updated_df.to_excel(FILE_PATH, index=False)
-            print("Excel updated successfully.")
-            
-        except Exception as e:
-            print(f"Error reading/writing Excel: {e}")
-    else:
-        print("Excel file not found. Creating new one.")
-        new_data.to_excel(FILE_PATH, index=False)
 
 if __name__ == "__main__":
     run()
