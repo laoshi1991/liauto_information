@@ -7,7 +7,7 @@ import scraper
 
 app = Flask(__name__)
 # Use relative path for Vercel/Cloud compatibility
-FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '理想南向持有.xlsx')
+FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'liauto_southbound.xlsx')
 
 def read_data():
     if not os.path.exists(FILE_PATH):
@@ -36,11 +36,25 @@ def get_data():
     data = read_data()
     return jsonify(data)
 
+@app.route('/api/debug')
+def debug_info():
+    """Endpoint to check file system and environment on Vercel"""
+    import platform
+    info = {
+        'cwd': os.getcwd(),
+        'files_in_cwd': os.listdir('.'),
+        'file_path': FILE_PATH,
+        'file_exists': os.path.exists(FILE_PATH),
+        'python_version': platform.python_version(),
+        'platform': platform.platform()
+    }
+    return jsonify(info)
+
 @app.route('/api/export')
 def export_data():
     if not os.path.exists(FILE_PATH):
         return "Data file not found", 404
-    return send_file(FILE_PATH, as_attachment=True, download_name='理想汽车南向持股数据.xlsx')
+    return send_file(FILE_PATH, as_attachment=True, download_name='liauto_southbound.xlsx')
 
 def scheduled_job():
     print(f"Job run at {datetime.datetime.now()}")

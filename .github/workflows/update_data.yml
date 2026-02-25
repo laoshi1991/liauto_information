@@ -38,7 +38,7 @@ jobs:
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         if [ -n "$(git status --porcelain)" ]; then
           echo "changes=true" >> $GITHUB_OUTPUT
-          git add "理想南向持有.xlsx"
+          git add "liauto_southbound.xlsx"
           git commit -m "Auto-update data: $(date +'%Y-%m-%d')"
           git push
         else

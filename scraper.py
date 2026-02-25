@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 # Use relative path
-FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '理想南向持有.xlsx')
+FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'liauto_southbound.xlsx')
 
 def run():
     print(f"[{datetime.now()}] Starting scraper...")
