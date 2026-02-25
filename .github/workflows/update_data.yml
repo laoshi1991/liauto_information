@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main ]
   schedule:
-    # Run at 18:00 Beijing Time (UTC+8) -> 10:00 UTC every day
-    - cron: '0 10 * * *'
+    # Run at 20:30 Beijing Time (UTC+8) -> 12:30 UTC every day
+    - cron: '30 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
