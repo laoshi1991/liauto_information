@@ -20,8 +20,8 @@ def read_data():
         else:
             df['日期'] = df['日期'].astype(str)
             
-        # Convert NaN to None or 0
-        df = df.where(pd.notnull(df), None)
+        # Convert NaN to 0 for JSON compatibility and chart safety
+        df = df.fillna(0)
         return df.to_dict(orient='records')
     except Exception as e:
         print(f"Error reading data: {e}")
