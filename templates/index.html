@@ -188,6 +188,7 @@
 
     <header>
         <h1>理想汽车数据信息</h1>
+        <p id="data-summary" style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;"></p>
     </header>
 
     <nav class="tab-nav">
@@ -254,6 +255,34 @@
                     myChart.hideLoading();
                     
                     data.sort((a, b) => new Date(a['日期']) - new Date(b['日期']));
+
+                    // Update Summary
+                    if (data.length > 0) {
+                        const latest = data[data.length - 1];
+                        const dateStr = latest['日期'];
+                        // Parse YYYY-MM-DD manually to avoid timezone issues
+                        const parts = dateStr.split('-');
+                        const month = parseInt(parts[1], 10);
+                        const day = parseInt(parts[2], 10);
+                        
+                        const netInc = latest['南向当日净增持：万股'];
+                        const totalHold = latest['南向总持有：亿股'];
+                        
+                        let action = "净增持";
+                        let amount = netInc;
+                        
+                        if (netInc < 0) {
+                            action = "净减持";
+                            amount = Math.abs(netInc);
+                        }
+                        
+                        // Format numbers
+                        const amountStr = Number(amount).toFixed(2);
+                        const totalStr = Number(totalHold).toFixed(2);
+                        
+                        const summaryText = `${month}月${day}日，南向${action}${amountStr}万股，南向现状持有${totalStr}亿股。`;
+                        document.getElementById('data-summary').innerText = summaryText;
+                    }
 
                     const dates = data.map(item => item['日期']);
                     const netIncrease = data.map(item => item['南向当日净增持：万股']);
