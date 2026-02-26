@@ -2,9 +2,88 @@ import akshare as ak
 import pandas as pd
 import os
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Use relative path
 FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'liauto_southbound.xlsx')
+
+def send_email(new_data_df):
+    sender_email = os.environ.get('MAIL_USERNAME')
+    sender_password = os.environ.get('MAIL_PASSWORD')
+    recipient_email = 'iamterrencecao@gmail.com'
+
+    if not sender_email or not sender_password:
+        print("Email credentials not found. Skipping email.")
+        return
+
+    try:
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        
+        # Use date from the first row of new_data_df (which is just one row here)
+        if not new_data_df.empty:
+            report_date = new_data_df.iloc[0]['日期']
+            msg['Subject'] = f"理想汽车数据日报 - {report_date}"
+        else:
+             msg['Subject'] = f"理想汽车数据日报 - 无数据 - {datetime.now().strftime('%Y-%m-%d')}"
+
+        # Build HTML content
+        html_content = """
+        <html>
+        <head>
+            <style>
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+            </style>
+        </head>
+        <body>
+            <h2>最新一天的南向持股数据</h2>
+            <table>
+                <tr>
+                    <th>日期</th>
+                    <th>南向当日净增持(万股)</th>
+                    <th>南向总持有(亿股)</th>
+                    <th>收盘价(HKD)</th>
+                    <th>当日涨跌幅(%)</th>
+                </tr>
+        """
+        
+        for _, row in new_data_df.iterrows():
+            html_content += f"""
+                <tr>
+                    <td>{row['日期']}</td>
+                    <td>{row['南向当日净增持：万股']:.2f}</td>
+                    <td>{row['南向总持有：亿股']:.4f}</td>
+                    <td>{row['收盘价'] if pd.notnull(row['收盘价']) else '-'}</td>
+                    <td>{row['当日涨跌幅'] if pd.notnull(row['当日涨跌幅']) else '-'}</td>
+                </tr>
+            """
+            
+        html_content += """
+            </table>
+            <p>更多详情请访问: <a href="https://liauto.personaltools.fun/">理想汽车数据看板</a></p>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html_content, 'html'))
+
+        # Send email
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        print(f"Email sent successfully to {recipient_email}")
+
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
 def run():
     print(f"[{datetime.now()}] Starting scraper...")
@@ -83,6 +162,14 @@ def run():
             '当日涨跌幅'
         ]].copy()
         
+        # Always send email with the latest row (reporting mode)
+        if not final_df.empty:
+            latest_row = final_df.iloc[[-1]] # Keep as DataFrame
+            print("Sending email with latest data...")
+            send_email(latest_row)
+        else:
+            print("No data available to report.")
+
         # 5. Save (Overwrite to ensure consistency)
         final_df.to_excel(FILE_PATH, index=False)
         print(f"Excel updated successfully. Total rows: {len(final_df)}")
