@@ -34,6 +34,13 @@ jobs:
         MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       run: python scraper.py
 
+    - name: Debug Email
+      if: failure() || success()
+      env:
+        MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+        MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      run: python debug_email.py
+
     - name: Check for changes
       id: git-check
       run: |
