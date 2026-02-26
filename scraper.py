@@ -11,8 +11,9 @@ def run():
     
     try:
         # Define date range
+        # Always fetch from start date to today to ensure we catch any corrections or late updates
         start_date = '2025-10-24'
-        end_date = '2026-02-24'
+        end_date = datetime.now().strftime('%Y-%m-%d')
         
         # 1. Fetch Southbound Holdings Data
         print("Fetching Southbound Holdings...")
@@ -24,33 +25,36 @@ def run():
         df_hk = ak.stock_hk_daily(symbol="02015", adjust="")
         df_hk['date'] = pd.to_datetime(df_hk['date'])
         
-        # Filter date range for HK data (as base)
-        mask = (df_hk['date'] >= start_date) & (df_hk['date'] <= end_date)
-        df_hk_filtered = df_hk.loc[mask].copy()
+        # Filter date range
+        mask_hk = (df_hk['date'] >= start_date) & (df_hk['date'] <= end_date)
+        df_hk_filtered = df_hk.loc[mask_hk].copy()
         
-        # 3. Merge Data (Left Join on HK dates)
+        mask_hsgt = (df_hsgt['持股日期'] >= start_date) & (df_hsgt['持股日期'] <= end_date)
+        df_hsgt_filtered = df_hsgt.loc[mask_hsgt].copy()
+        
+        # 3. Merge Data (Outer Join to capture updates from either source)
+        # Requirement 1: If both missing (no date in either), no row is created.
         merged_df = pd.merge(
             df_hk_filtered[['date', 'open', 'high', 'low', 'close']], 
-            df_hsgt[['持股日期', '持股数量']], 
+            df_hsgt_filtered[['持股日期', '持股数量']], 
             left_on='date', 
             right_on='持股日期', 
-            how='left'
+            how='outer'
         )
+        
+        # Coalesce dates (fill 'date' with '持股日期' if 'date' is NaN)
+        merged_df['date'] = merged_df['date'].fillna(merged_df['持股日期'])
         
         # 4. Process Data
         merged_df = merged_df.sort_values('date')
         
         # Calculate daily change percentage: (close - prev_close) / prev_close * 100
-        # Note: We need previous day's close to calculate change for the first day in range.
-        # But here we just calculate based on available data.
         merged_df['prev_close'] = merged_df['close'].shift(1)
         merged_df['当日涨跌幅'] = ((merged_df['close'] - merged_df['prev_close']) / merged_df['prev_close'] * 100).round(2)
-        merged_df['当日涨跌幅'] = merged_df['当日涨跌幅'].fillna(0) # First day might be NaN
+        # Note: If Price is missing (NaN), change percent will be NaN, which is correct (Req 3)
         
-        # Forward Fill '持股数量' for gaps (Southbound closed but HK open)
-        # First, we need to ensure we have a starting value. 
-        # If the first day has no Southbound data, we might need to look back further.
-        # For now, we assume the data is sufficient or we backfill if needed, but ffill is safer.
+        # Requirement 2: If Stock Price exists but Southbound missing -> ffill Holdings
+        # Requirement 3: If Price missing but Southbound exists -> Keep Price NaN
         merged_df['持股数量'] = merged_df['持股数量'].ffill()
         
         # Calculate Net Increase
@@ -79,7 +83,7 @@ def run():
             '当日涨跌幅'
         ]].copy()
         
-        # 5. Save (Overwrite)
+        # 5. Save (Overwrite to ensure consistency)
         final_df.to_excel(FILE_PATH, index=False)
         print(f"Excel updated successfully. Total rows: {len(final_df)}")
         print(f"Date range: {final_df['日期'].min()} to {final_df['日期'].max()}")
