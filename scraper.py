@@ -26,10 +26,10 @@ def send_email(new_data_df):
         
         # Use date from the first row of new_data_df (which is just one row here)
         if not new_data_df.empty:
-            report_date = new_data_df.iloc[0]['日期']
-            msg['Subject'] = f"理想汽车数据日报 - {report_date}"
+            report_date = new_data_df.iloc[-1]['日期'] # Use the latest date
+            msg['Subject'] = f"理想汽车数据更新 - {report_date}"
         else:
-             msg['Subject'] = f"理想汽车数据日报 - 无数据 - {datetime.now().strftime('%Y-%m-%d')}"
+             msg['Subject'] = f"理想汽车数据更新 - 无数据 - {datetime.now().strftime('%Y-%m-%d')}"
 
         # Build HTML content
         html_content = """
@@ -90,12 +90,14 @@ def run():
     
     try:
         # Load existing data to check for updates later
-        old_max_date = '2000-01-01'
+        old_data = {}
         if os.path.exists(FILE_PATH):
             try:
                 old_df = pd.read_excel(FILE_PATH)
                 if not old_df.empty and '日期' in old_df.columns:
-                    old_max_date = old_df['日期'].max()
+                    # Store date and net increase for comparison
+                    for _, row in old_df.iterrows():
+                        old_data[row['日期']] = row['南向当日净增持：万股']
             except Exception as e:
                 print(f"Warning: Could not read existing file: {e}")
 
@@ -172,17 +174,32 @@ def run():
             '当日涨跌幅'
         ]].copy()
         
-        # Check for new data
-        # Ensure '日期' column is string format for comparison, as old_max_date is string
-        # If final_df['日期'] is datetime, convert it. But line 147 already converts it to string '%Y-%m-%d'
+        # Check for new data or updates
+        new_rows_list = []
         
-        new_rows = final_df[final_df['日期'] > old_max_date]
-        if not new_rows.empty:
-            print(f"Found {len(new_rows)} new rows (Latest: {final_df['日期'].max()}, Old Max: {old_max_date}). Sending email...")
-            # Send email with the NEW data
-            send_email(new_rows)
+        for _, row in final_df.iterrows():
+            date_str = row['日期']
+            current_net = row['南向当日净增持：万股']
+            
+            # Case 1: New date (not in old data)
+            if date_str not in old_data:
+                print(f"New date found: {date_str}")
+                new_rows_list.append(row)
+            # Case 2: Existing date but data changed (e.g. 0 -> real value)
+            else:
+                old_net = old_data[date_str]
+                # Compare floating point numbers with a small tolerance
+                if abs(current_net - old_net) > 0.001:
+                    print(f"Data updated for {date_str}: Old={old_net}, New={current_net}")
+                    new_rows_list.append(row)
+
+        if new_rows_list:
+            print(f"Found {len(new_rows_list)} updated rows. Sending email...")
+            # Convert list of Series to DataFrame
+            new_data_df = pd.DataFrame(new_rows_list)
+            send_email(new_data_df)
         else:
-            print(f"No new data found. (Latest: {final_df['日期'].max()} <= Old Max: {old_max_date})")
+            print("No new data or updates found.")
 
         # 5. Save (Overwrite to ensure consistency)
         final_df.to_excel(FILE_PATH, index=False)
