@@ -89,6 +89,16 @@ def run():
     print(f"[{datetime.now()}] Starting scraper...")
     
     try:
+        # Load existing data to check for updates later
+        old_max_date = '2000-01-01'
+        if os.path.exists(FILE_PATH):
+            try:
+                old_df = pd.read_excel(FILE_PATH)
+                if not old_df.empty and '日期' in old_df.columns:
+                    old_max_date = old_df['日期'].max()
+            except Exception as e:
+                print(f"Warning: Could not read existing file: {e}")
+
         # Define date range
         # Always fetch from start date to today to ensure we catch any corrections or late updates
         start_date = '2025-10-24'
@@ -162,13 +172,17 @@ def run():
             '当日涨跌幅'
         ]].copy()
         
-        # Always send email with the latest row (reporting mode)
-        if not final_df.empty:
-            latest_row = final_df.iloc[[-1]] # Keep as DataFrame
-            print("Sending email with latest data...")
-            send_email(latest_row)
+        # Check for new data
+        # Ensure '日期' column is string format for comparison, as old_max_date is string
+        # If final_df['日期'] is datetime, convert it. But line 147 already converts it to string '%Y-%m-%d'
+        
+        new_rows = final_df[final_df['日期'] > old_max_date]
+        if not new_rows.empty:
+            print(f"Found {len(new_rows)} new rows (Latest: {final_df['日期'].max()}, Old Max: {old_max_date}). Sending email...")
+            # Send email with the NEW data
+            send_email(new_rows)
         else:
-            print("No data available to report.")
+            print(f"No new data found. (Latest: {final_df['日期'].max()} <= Old Max: {old_max_date})")
 
         # 5. Save (Overwrite to ensure consistency)
         final_df.to_excel(FILE_PATH, index=False)
