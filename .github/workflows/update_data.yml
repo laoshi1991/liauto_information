@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main ]
   schedule:
-    # Run at 09:00 Beijing Time (UTC+8) -> 01:00 UTC every day
-    - cron: '0 1 * * *'
+    # Run at 09:35 Beijing Time (UTC+8) -> 01:35 UTC every day
+    - cron: '35 1 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -17,18 +17,21 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
+      
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
-
+        python-version: '3.9'
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install akshare pandas openpyxl requests
 
-    - name: Run scraper script
+    - name: Run scraper
+      env:
+        MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+        MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       run: python scraper.py
 
     - name: Check for changes
