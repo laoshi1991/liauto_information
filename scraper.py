@@ -134,7 +134,7 @@ def run():
         # Requirement 1: If both missing (no date in either), no row is created.
         merged_df = pd.merge(
             df_hk_filtered[['date', 'open', 'high', 'low', 'close']], 
-            df_hsgt_filtered[['持股日期', '持股数量']], 
+            df_hsgt_filtered[['持股日期', '持股数量', '当日收盘价']], # Include '当日收盘价' from Southbound data
             left_on='date', 
             right_on='持股日期', 
             how='outer'
@@ -142,6 +142,9 @@ def run():
         
         # Coalesce dates (fill 'date' with '持股日期' if 'date' is NaN)
         merged_df['date'] = merged_df['date'].fillna(merged_df['持股日期'])
+        
+        # Fallback: If stock price from HK daily is missing, use '当日收盘价' from Southbound data
+        merged_df['close'] = merged_df['close'].fillna(merged_df['当日收盘价'])
         
         # 4. Process Data
         merged_df = merged_df.sort_values('date')
