@@ -97,7 +97,12 @@ def run():
                 if not old_df.empty and '日期' in old_df.columns:
                     # Store date and net increase for comparison
                     for _, row in old_df.iterrows():
-                        old_data[row['日期']] = row['南向当日净增持：万股']
+                        date_val = row['日期']
+                        if isinstance(date_val, pd.Timestamp):
+                            date_str = date_val.strftime('%Y-%m-%d')
+                        else:
+                            date_str = str(date_val)
+                        old_data[date_str] = row['南向当日净增持：万股']
             except Exception as e:
                 print(f"Warning: Could not read existing file: {e}")
 
