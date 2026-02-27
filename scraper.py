@@ -91,11 +91,12 @@ def run():
     try:
         # Load existing data to check for updates later
         old_data = {}
+        old_prices = {} # Store old closing prices
         if os.path.exists(FILE_PATH):
             try:
                 old_df = pd.read_excel(FILE_PATH)
                 if not old_df.empty and '日期' in old_df.columns:
-                    # Store date and net increase for comparison
+                    # Store date, net increase, and closing price for comparison
                     for _, row in old_df.iterrows():
                         date_val = row['日期']
                         if isinstance(date_val, pd.Timestamp):
@@ -103,6 +104,7 @@ def run():
                         else:
                             date_str = str(date_val)
                         old_data[date_str] = row['南向当日净增持：万股']
+                        old_prices[date_str] = row['收盘价'] if pd.notnull(row['收盘价']) else None
             except Exception as e:
                 print(f"Warning: Could not read existing file: {e}")
 
@@ -185,17 +187,31 @@ def run():
         for _, row in final_df.iterrows():
             date_str = row['日期']
             current_net = row['南向当日净增持：万股']
+            current_price = row['收盘价'] if pd.notnull(row['收盘价']) else None
             
             # Case 1: New date (not in old data)
             if date_str not in old_data:
                 print(f"New date found: {date_str}")
                 new_rows_list.append(row)
-            # Case 2: Existing date but data changed (e.g. 0 -> real value)
+            # Case 2: Existing date but data changed (e.g. Southbound updated OR Stock Price updated)
             else:
-                old_net = old_data[date_str]
-                # Compare floating point numbers with a small tolerance
-                if abs(current_net - old_net) > 0.001:
-                    print(f"Data updated for {date_str}: Old={old_net}, New={current_net}")
+                old_net = old_data.get(date_str)
+                old_price = old_prices.get(date_str)
+                
+                # Check for Southbound update (tolerance 0.001)
+                net_changed = abs(current_net - old_net) > 0.001
+                
+                # Check for Stock Price update
+                # Only if current price is valid and different from old price
+                price_changed = False
+                if current_price is not None:
+                    if old_price is None:
+                        price_changed = True # Price appeared
+                    elif abs(current_price - old_price) > 0.001:
+                        price_changed = True # Price changed
+                
+                if net_changed or price_changed:
+                    print(f"Data updated for {date_str}: Net Changed={net_changed}, Price Changed={price_changed}")
                     new_rows_list.append(row)
 
         if new_rows_list:
