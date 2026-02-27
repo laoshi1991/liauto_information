@@ -289,17 +289,19 @@
                         chartInstance.current = echarts.init(chartRef.current);
                     }
 
-                    // Filter out invalid price data (0 or null)
-                    const validData = data.filter(item => item['开盘价'] > 0 && item['收盘价'] > 0);
+                    // Filter out invalid data (must at least have a close price)
+                    const validData = data.filter(item => item['收盘价'] > 0);
                     
                     const dates = validData.map(item => item['日期']);
                     // ECharts candlestick data format: [open, close, lowest, highest]
-                    const ohlcData = validData.map(item => [
-                        item['开盘价'],
-                        item['收盘价'],
-                        item['最低价'],
-                        item['最高价']
-                    ]);
+                    const ohlcData = validData.map(item => {
+                        const close = item['收盘价'];
+                        // Fallback: If open/high/low are missing, use close price (show as flat line)
+                        const open = (item['开盘价'] > 0) ? item['开盘价'] : close;
+                        const low = (item['最低价'] > 0) ? item['最低价'] : Math.min(open, close);
+                        const high = (item['最高价'] > 0) ? item['最高价'] : Math.max(open, close);
+                        return [open, close, low, high];
+                    });
 
                     const option = {
                         backgroundColor: 'transparent',
