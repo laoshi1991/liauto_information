@@ -1,449 +1,506 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>理想汽车数据信息</title>
+    <title>理想汽车南向资金看板</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b', // Custom dark card
+                            950: '#020617', // Custom dark bg
+                        },
+                        primary: '#3b82f6', // Blue 500
+                        secondary: '#f59e0b', // Amber 500
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-color: #0b1120;
-            --card-bg: rgba(30, 41, 59, 0.6);
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --accent-color: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.3);
-            --border-color: rgba(148, 163, 184, 0.1);
-        }
-        
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-            color: var(--text-primary);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
         }
-
-        header {
-            background: rgba(15, 23, 42, 0.8);
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
-            padding: 1rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            z-index: 10;
-            position: relative;
-        }
-
-        header::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
-            opacity: 0.5;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
-
-        .tab-nav {
-            display: flex;
-            justify-content: center;
-            background: rgba(15, 23, 42, 0.6);
-            padding: 1rem;
-            gap: 1rem;
-        }
-
-        .tab-btn {
-            padding: 0.6rem 1.5rem;
-            border: 1px solid var(--border-color);
-            background: rgba(30, 41, 59, 0.4);
-            cursor: pointer;
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            border-radius: 9999px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .tab-btn:hover {
-            color: var(--text-primary);
-            background: rgba(56, 189, 248, 0.1);
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .tab-btn.active {
-            color: #0b1120;
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            font-weight: 600;
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .content-container {
-            flex: 1;
-            padding: 1.5rem;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tab-content {
-            display: none;
-            width: 100%;
-            height: 100%;
-            animation: fadeIn 0.4s ease-out;
-            position: relative;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .export-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .export-btn:hover {
-            background: var(--accent-color);
-            color: #0b1120;
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        #chart-container {
-            width: 100%;
-            height: 100%;
-            min-height: 400px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            backdrop-filter: blur(8px);
-            padding: 1rem;
-            box-sizing: border-box;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .placeholder-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            background: var(--card-bg);
-            border: 1px dashed var(--border-color);
-            border-radius: 16px;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 768px) {
-            h1 { font-size: 1.2rem; }
-            .tab-btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
-            .content-container { padding: 0.5rem; }
-            #chart-container { border-radius: 12px; }
+            border: 1px solid rgba(148, 163, 184, 0.1);
         }
     </style>
 </head>
-<body>
+<body class="antialiased bg-slate-900 text-slate-100 min-h-screen">
+    <div id="root"></div>
 
-    <header>
-        <h1>理想汽车数据信息</h1>
-        <p id="data-summary" style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;"></p>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
 
-    <nav class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('tab1')">南向持股</button>
-        <button class="tab-btn" onclick="switchTab('tab2')">待开发</button>
-        <button class="tab-btn" onclick="switchTab('tab3')">待开发</button>
-    </nav>
+        // --- Components ---
 
-    <div class="content-container">
-        <!-- Tab 1: Chart -->
-        <div id="tab1" class="tab-content active">
-            <button class="export-btn" onclick="exportData()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                导出数据
-            </button>
-            <div id="chart-container"></div>
-        </div>
-
-        <!-- Tab 2: Placeholder -->
-        <div id="tab2" class="tab-content">
-            <div class="placeholder-content">
-                Waiting for Development...
+        const StatCard = ({ title, value, subtext, trend, iconName, color }) => (
+            <div className="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-slate-600 transition-all duration-300">
+                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+                    <i data-lucide={iconName} className="w-16 h-16"></i>
+                </div>
+                <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-2 rounded-lg bg-slate-800/50 ${color}`}>
+                        <i data-lucide={iconName} className="w-5 h-5"></i>
+                    </div>
+                    <span className="text-slate-400 text-sm font-medium">{title}</span>
+                </div>
+                <div className="text-3xl font-bold tracking-tight mb-1">
+                    {value}
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                    {trend && (
+                        <span className={`font-medium ${trend > 0 ? 'text-rose-400' : trend < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                            {trend > 0 ? '+' : ''}{trend}%
+                        </span>
+                    )}
+                    <span className="text-slate-500">{subtext}</span>
+                </div>
             </div>
-        </div>
+        );
 
-        <!-- Tab 3: Placeholder -->
-        <div id="tab3" class="tab-content">
-            <div class="placeholder-content">
-                Waiting for Development...
+        const ChartContainer = ({ title, children }) => (
+            <div className="glass-card rounded-xl p-6 h-full flex flex-col">
+                <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" className="w-5 h-5 text-primary"></i>
+                    {title}
+                </h3>
+                <div className="flex-1 min-h-[400px] w-full relative">
+                    {children}
+                </div>
             </div>
-        </div>
-    </div>
+        );
 
-    <script>
-        var myChart = null;
-        var chartDom = document.getElementById('chart-container');
+        const DataTable = ({ data }) => {
+            if (!data || data.length === 0) return <div className="text-slate-400 p-4">暂无数据</div>;
 
-        // Initialize chart
-        function initChart() {
-            if (myChart) return;
-            // Use dark theme
-            myChart = echarts.init(chartDom, 'dark', {
-                renderer: 'canvas',
-                useDirtyRect: false
-            });
-            fetchData();
-        }
+            return (
+                <div className="glass-card rounded-xl overflow-hidden">
+                    <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-slate-200">最近30天交易数据</h3>
+                        <a href="/api/export" className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i data-lucide="download" className="w-4 h-4"></i>
+                            导出Excel
+                        </a>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-800/50 text-slate-400 uppercase tracking-wider font-medium">
+                                <tr>
+                                    <th className="px-6 py-4">日期</th>
+                                    <th className="px-6 py-4 text-right">收盘价 (HKD)</th>
+                                    <th className="px-6 py-4 text-right">涨跌幅</th>
+                                    <th className="px-6 py-4 text-right">南向持股 (亿股)</th>
+                                    <th className="px-6 py-4 text-right">当日净增持 (万股)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700/50">
+                                {data.slice().reverse().slice(0, 30).map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-slate-300">{row['日期']}</td>
+                                        <td className="px-6 py-4 text-right font-mono">{row['收盘价']?.toFixed(2) || '-'}</td>
+                                        <td className={`px-6 py-4 text-right font-mono font-medium ${row['当日涨跌幅'] > 0 ? 'text-rose-400' : row['当日涨跌幅'] < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                            {row['当日涨跌幅'] ? (row['当日涨跌幅'] > 0 ? '+' : '') + row['当日涨跌幅'] + '%' : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-mono">{row['南向总持有：亿股']?.toFixed(4)}</td>
+                                        <td className={`px-6 py-4 text-right font-mono font-medium ${row['南向当日净增持：万股'] > 0 ? 'text-rose-400' : row['南向当日净增持：万股'] < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                            {row['南向当日净增持：万股'] > 0 ? '+' : ''}{row['南向当日净增持：万股']?.toFixed(2)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
 
-        function fetchData() {
-            myChart.showLoading({
-                text: 'Loading...',
-                color: '#38bdf8',
-                textColor: '#94a3b8',
-                maskColor: 'rgba(11, 17, 32, 0.8)'
-            });
-            
-            fetch('/api/data')
-                .then(response => response.json())
-                .then(data => {
-                    myChart.hideLoading();
-                    
-                    data.sort((a, b) => new Date(a['日期']) - new Date(b['日期']));
+        const HoldingsChart = ({ data }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
 
-                    // Update Summary
-                    if (data.length > 0) {
-                        const latest = data[data.length - 1];
-                        const dateStr = latest['日期'];
-                        // Parse YYYY-MM-DD manually to avoid timezone issues
-                        const parts = dateStr.split('-');
-                        const month = parseInt(parts[1], 10);
-                        const day = parseInt(parts[2], 10);
-                        
-                        const netInc = latest['南向当日净增持：万股'];
-                        const totalHold = latest['南向总持有：亿股'];
-                        
-                        let action = "净增持";
-                        let amount = netInc;
-                        
-                        if (netInc < 0) {
-                            action = "净减持";
-                            amount = Math.abs(netInc);
-                        }
-                        
-                        // Format numbers
-                        const amountStr = Number(amount).toFixed(2);
-                        const totalStr = Number(totalHold).toFixed(2);
-                        
-                        const summaryText = `${month}月${day}日，南向${action}${amountStr}万股，南向现状持有${totalStr}亿股。`;
-                        document.getElementById('data-summary').innerText = summaryText;
+            useEffect(() => {
+                if (!chartRef.current || !data || data.length === 0) return;
+
+                try {
+                    if (!chartInstance.current) {
+                        chartInstance.current = echarts.init(chartRef.current);
                     }
 
                     const dates = data.map(item => item['日期']);
                     const netIncrease = data.map(item => item['南向当日净增持：万股']);
-                    const totalHoldings = data.map(item => item['南向总持有：亿股']);
+                    const totalHolding = data.map(item => item['南向总持有：亿股']);
+
+                    // Calculate reasonable min value for right axis
+                    // Filter out 0s if they are placeholders, or just use 4.5 as requested
+                    // But if data is all 0, 4.5 will hide everything.
+                    // Let's use scale:true but with a min limit if max > 4.5
+                    const maxHolding = Math.max(...totalHolding);
+                    const yAxisMin = maxHolding > 4.5 ? 4.5 : 'dataMin';
 
                     const option = {
                         backgroundColor: 'transparent',
                         tooltip: {
                             trigger: 'axis',
+                            axisPointer: { type: 'cross' },
                             backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            borderColor: '#38bdf8',
-                            textStyle: { color: '#f1f5f9' },
-                            axisPointer: { 
-                                type: 'line',
-                                lineStyle: {
-                                    color: '#38bdf8',
-                                    type: 'dashed'
-                                }
-                            }
+                            borderColor: '#334155',
+                            textStyle: { color: '#f8fafc' }
                         },
                         legend: {
-                            data: ['南向当日净增持（万股）', '南向总持有（亿股）'],
-                            bottom: 0,
-                            textStyle: { color: '#94a3b8' }
+                            data: ['南向净增持(万股)', '南向总持有(亿股)'],
+                            textStyle: { color: '#94a3b8' },
+                            top: 0
                         },
                         grid: {
-                            top: '15%',
                             left: '3%',
                             right: '3%',
-                            bottom: '10%',
-                            containLabel: true,
-                            borderColor: '#333'
+                            bottom: '15%',
+                            containLabel: true
                         },
-                        xAxis: [
-                            {
-                                type: 'category',
-                                data: dates,
-                                axisLine: { lineStyle: { color: '#475569' } },
-                                axisLabel: { color: '#94a3b8' },
-                                axisPointer: { type: 'shadow' }
-                            }
+                        dataZoom: [
+                            { type: 'inside', start: 50, end: 100 },
+                            { type: 'slider', show: true, bottom: 0, height: 20, borderColor: '#334155', fillerColor: 'rgba(59, 130, 246, 0.2)' }
                         ],
+                        xAxis: {
+                            type: 'category',
+                            data: dates,
+                            axisLine: { lineStyle: { color: '#475569' } },
+                            axisLabel: { color: '#94a3b8' }
+                        },
                         yAxis: [
                             {
                                 type: 'value',
-                                name: '净增持（万股）',
-                                nameTextStyle: { color: '#94a3b8' },
-                                splitLine: { 
-                                    show: true, 
-                                    lineStyle: { color: 'rgba(148, 163, 184, 0.05)' } 
-                                },
-                                axisLabel: { color: '#94a3b8' }
+                                name: '净增持(万股)',
+                                position: 'left',
+                                axisLine: { show: true, lineStyle: { color: '#475569' } },
+                                axisLabel: { color: '#94a3b8' },
+                                splitLine: { lineStyle: { color: '#1e293b' } }
                             },
                             {
                                 type: 'value',
-                                name: '总持有（亿股）',
-                                nameTextStyle: { color: '#94a3b8' },
+                                name: '总持有(亿股)',
                                 position: 'right',
-                                splitLine: { show: false },
-                                axisLabel: { color: '#94a3b8' }
+                                min: yAxisMin,
+                                axisLine: { show: true, lineStyle: { color: '#475569' } },
+                                axisLabel: { color: '#94a3b8' },
+                                splitLine: { show: false }
                             }
                         ],
                         series: [
                             {
-                                name: '南向当日净增持（万股）',
+                                name: '南向净增持(万股)',
                                 type: 'bar',
                                 data: netIncrease,
                                 itemStyle: {
-                                    color: function(params) {
-                                        let val = params.value;
-                                        if (val >= 0) {
-                                            // Positive: Red (End of bar to 0-axis)
-                                            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                                { offset: 0, color: '#ef4444' }, 
-                                                { offset: 1, color: 'rgba(239, 68, 68, 0.1)' }
-                                            ]);
-                                        } else {
-                                            // Negative: Green (0-axis to End of bar)
-                                            return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                                { offset: 0, color: 'rgba(34, 197, 94, 0.1)' },
-                                                { offset: 1, color: '#22c55e' }
-                                            ]);
-                                        }
-                                    },
-                                    borderRadius: [4, 4, 4, 4]
-                                },
-                                animationDelay: (idx) => idx * 10
+                                    color: (params) => {
+                                        return params.value > 0 ? '#ef4444' : '#10b981';
+                                    }
+                                }
                             },
                             {
-                                name: '南向总持有（亿股）',
+                                name: '南向总持有(亿股)',
                                 type: 'line',
                                 yAxisIndex: 1,
-                                data: totalHoldings,
-                                itemStyle: {
-                                    color: '#38bdf8'
-                                },
-                                lineStyle: {
-                                    width: 3,
-                                    shadowColor: 'rgba(56, 189, 248, 0.5)',
-                                    shadowBlur: 10
-                                },
-                                showSymbol: false,
+                                data: totalHolding,
                                 smooth: true,
-                                animationDelay: (idx) => idx * 10 + 100
+                                showSymbol: false,
+                                itemStyle: { color: '#3b82f6' },
+                                areaStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+                                        { offset: 1, color: 'rgba(59, 130, 246, 0.01)' }
+                                    ])
+                                }
                             }
                         ]
                     };
-                    myChart.setOption(option);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    myChart.hideLoading();
-                    // Show error on screen for debugging
-                    const container = document.getElementById('chart-container');
-                    container.innerHTML = `<div style="color: #ef4444; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center;">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        <h3>Failed to load data</h3>
-                        <p style="color: #94a3b8; font-size: 0.9rem;">${error.message}</p>
-                        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #38bdf8; border: none; border-radius: 4px; color: #0f172a; cursor: pointer;">Retry</button>
-                    </div>`;
-                });
-        }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    chartInstance.current.setOption(option);
+                    
+                    const handleResize = () => {
+                        chartInstance.current && chartInstance.current.resize();
+                    };
+                    window.addEventListener('resize', handleResize);
+                    
+                    // Force resize after a small delay to ensure container has size
+                    setTimeout(handleResize, 100);
 
-            const buttons = document.querySelectorAll('.tab-btn');
-            if(tabId === 'tab1') buttons[0].classList.add('active');
-            if(tabId === 'tab2') buttons[1].classList.add('active');
-            if(tabId === 'tab3') buttons[2].classList.add('active');
+                    return () => {
+                        window.removeEventListener('resize', handleResize);
+                        chartInstance.current && chartInstance.current.dispose();
+                        chartInstance.current = null;
+                    };
+                } catch (e) {
+                    console.error("ECharts error:", e);
+                }
+            }, [data]);
 
-            document.getElementById(tabId).classList.add('active');
+            return <div ref={chartRef} className="w-full h-full" />;
+        };
 
-            if (tabId === 'tab1') {
-                setTimeout(() => {
-                    if (myChart) {
-                        myChart.resize();
-                    } else {
-                        initChart();
+        const StockKLineChart = ({ data }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (!chartRef.current || !data || data.length === 0) return;
+
+                try {
+                    if (!chartInstance.current) {
+                        chartInstance.current = echarts.init(chartRef.current);
                     }
-                }, 50);
+
+                    // Filter out invalid price data (0 or null)
+                    const validData = data.filter(item => item['开盘价'] > 0 && item['收盘价'] > 0);
+                    
+                    const dates = validData.map(item => item['日期']);
+                    // ECharts candlestick data format: [open, close, lowest, highest]
+                    const ohlcData = validData.map(item => [
+                        item['开盘价'],
+                        item['收盘价'],
+                        item['最低价'],
+                        item['最高价']
+                    ]);
+
+                    const option = {
+                        backgroundColor: 'transparent',
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: { type: 'cross' },
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            borderColor: '#334155',
+                            textStyle: { color: '#f8fafc' }
+                        },
+                        legend: {
+                            data: ['日K'],
+                            textStyle: { color: '#94a3b8' },
+                            top: 0
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '3%',
+                            bottom: '15%',
+                            containLabel: true
+                        },
+                        dataZoom: [
+                            { type: 'inside', start: 50, end: 100 },
+                            { type: 'slider', show: true, bottom: 0, height: 20, borderColor: '#334155', fillerColor: 'rgba(245, 158, 11, 0.2)' }
+                        ],
+                        xAxis: {
+                            type: 'category',
+                            data: dates,
+                            axisLine: { lineStyle: { color: '#475569' } },
+                            axisLabel: { color: '#94a3b8' }
+                        },
+                        yAxis: {
+                            scale: true,
+                            axisLine: { show: true, lineStyle: { color: '#475569' } },
+                            axisLabel: { color: '#94a3b8' },
+                            splitLine: { lineStyle: { color: '#1e293b' } }
+                        },
+                        series: [
+                            {
+                                name: '日K',
+                                type: 'candlestick',
+                                data: ohlcData,
+                                itemStyle: {
+                                    color: '#ef4444',       // Up (Red)
+                                    color0: '#10b981',      // Down (Green)
+                                    borderColor: '#ef4444',
+                                    borderColor0: '#10b981'
+                                }
+                            }
+                        ]
+                    };
+
+                    chartInstance.current.setOption(option);
+                    
+                    const handleResize = () => {
+                        chartInstance.current && chartInstance.current.resize();
+                    };
+                    window.addEventListener('resize', handleResize);
+                    
+                    // Force resize after a small delay to ensure container has size
+                    setTimeout(handleResize, 100);
+
+                    return () => {
+                        window.removeEventListener('resize', handleResize);
+                        chartInstance.current && chartInstance.current.dispose();
+                        chartInstance.current = null;
+                    };
+                } catch (e) {
+                    console.error("ECharts error (StockKLineChart):", e);
+                }
+            }, [data]);
+
+            return <div ref={chartRef} className="w-full h-full" />;
+        };
+
+        const App = () => {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                fetch('/api/data')
+                    .then(res => res.json())
+                    .then(data => {
+                        setData(data);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Error fetching data:", err);
+                        setLoading(false);
+                    });
+                
+                // Initialize icons
+                lucide.createIcons();
+            }, []);
+
+            useEffect(() => {
+                if (!loading) {
+                    lucide.createIcons();
+                }
+            }, [loading]);
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-screen bg-slate-900">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    </div>
+                );
             }
-        }
 
-        function exportData() {
-            window.location.href = '/api/export';
-        }
+            const latest = data.length > 0 ? data[data.length - 1] : {};
+            const prev = data.length > 1 ? data[data.length - 2] : {};
 
-        window.addEventListener('DOMContentLoaded', () => {
-            initChart();
-        });
+            // Calculate change for total holding if possible
+            const holdingChange = latest['南向总持有：亿股'] - (prev['南向总持有：亿股'] || 0);
+            const holdingChangePercent = prev['南向总持有：亿股'] ? ((holdingChange / prev['南向总持有：亿股']) * 100).toFixed(2) : 0;
 
-        window.addEventListener('resize', () => {
-            if (myChart) myChart.resize();
-        });
+            return (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Header */}
+                    <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                                理想汽车南向资金看板
+                            </h1>
+                            <p className="text-slate-400 mt-1">实时追踪港股通持仓动态</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                自动更新: 24/7
+                            </span>
+                            <span className="text-xs text-slate-500 font-mono">
+                                最后更新: {latest['日期']}
+                            </span>
+                        </div>
+                    </header>
 
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <StatCard 
+                            title="南向当日净增持" 
+                            value={`${(latest['南向当日净增持：万股'] || 0).toFixed(2)} 万股`}
+                            subtext="较前日"
+                            trend={0} // Net increase is already a delta, trend isn't strictly applicable unless comparing to yesterday's net increase
+                            iconName="trending-up"
+                            color="text-emerald-400"
+                        />
+                        <StatCard 
+                            title="南向总持有" 
+                            value={`${(latest['南向总持有：亿股'] || 0).toFixed(4)} 亿股`}
+                            subtext="总量"
+                            trend={holdingChangePercent}
+                            iconName="pie-chart"
+                            color="text-blue-400"
+                        />
+                        <StatCard 
+                            title="收盘价 (HKD)" 
+                            value={latest['收盘价'] || '-'}
+                            subtext="最新收盘"
+                            trend={latest['当日涨跌幅']}
+                            iconName="dollar-sign"
+                            color="text-amber-400"
+                        />
+                        <StatCard 
+                            title="持仓市值 (估算)" 
+                            value={`≈ ${(latest['南向总持有：亿股'] * latest['收盘价']).toFixed(2)} 亿`}
+                            subtext="HKD"
+                            trend={null}
+                            iconName="wallet"
+                            color="text-purple-400"
+                        />
+                    </div>
+
+                    {/* Main Charts */}
+                    <div className="grid grid-cols-1 gap-6 mb-8">
+                        <div className="h-[500px]">
+                            <ChartContainer title="南向资金流向 (净增持 & 总持有)">
+                                <HoldingsChart data={data} />
+                            </ChartContainer>
+                        </div>
+                        <div className="h-[500px]">
+                            <ChartContainer title="股价走势 (日K线)">
+                                <StockKLineChart data={data} />
+                            </ChartContainer>
+                        </div>
+                    </div>
+
+                    {/* Data Table */}
+                    <div className="mb-8">
+                        <DataTable data={data} />
+                    </div>
+
+                    {/* Footer */}
+                    <footer className="text-center text-slate-500 text-sm py-8 border-t border-slate-800">
+                        <p>© {new Date().getFullYear()} Liauto Information Dashboard. Powered by Flask & React.</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
