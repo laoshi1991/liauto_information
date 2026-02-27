@@ -118,12 +118,31 @@ def run():
         df_hsgt = ak.stock_hsgt_individual_em(symbol="02015")
         df_hsgt['持股日期'] = pd.to_datetime(df_hsgt['持股日期'])
         
-        # 2. Fetch HK Stock Daily Data
+        # 2. Fetch HK Stock Daily Data (Using stock_hk_hist for better timeliness)
         print("Fetching HK Daily Data...")
-        df_hk = ak.stock_hk_daily(symbol="02015", adjust="")
-        df_hk['date'] = pd.to_datetime(df_hk['date'])
+        # Note: stock_hk_daily is lagging, use stock_hk_hist instead
+        # Need to format start/end dates for stock_hk_hist (YYYYMMDD)
+        start_date_str = start_date.replace('-', '')
+        end_date_str = end_date.replace('-', '')
         
-        # Filter date range
+        try:
+            df_hk = ak.stock_hk_hist(symbol="02015", period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
+            # Rename columns to match previous logic
+            # stock_hk_hist returns: 日期, 开盘, 收盘, 最高, 最低, ...
+            df_hk = df_hk.rename(columns={
+                '日期': 'date',
+                '开盘': 'open',
+                '收盘': 'close',
+                '最高': 'high',
+                '最低': 'low'
+            })
+            df_hk['date'] = pd.to_datetime(df_hk['date'])
+        except Exception as e:
+            print(f"Error fetching stock_hk_hist, falling back to stock_hk_daily: {e}")
+            df_hk = ak.stock_hk_daily(symbol="02015", adjust="")
+            df_hk['date'] = pd.to_datetime(df_hk['date'])
+        
+        # Filter date range (redundant if stock_hk_hist used date params, but good for safety)
         mask_hk = (df_hk['date'] >= start_date) & (df_hk['date'] <= end_date)
         df_hk_filtered = df_hk.loc[mask_hk].copy()
         
